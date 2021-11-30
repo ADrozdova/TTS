@@ -27,7 +27,7 @@ class FFTBlock(nn.Module):
     def __init__(self, n_heads, fft_emb, attn_dropout,
                  conv_in, conv_hidden, conv_out, kernels, padding, dropout):
         super(FFTBlock, self).__init__()
-        self.attn = MultiHeadAttention(n_heads, fft_emb, attn_dropout)
+        self.attn = MultiHeadAttention(n_heads, conv_in, attn_dropout)
         self.conv = ConvFFT(conv_in, conv_hidden, conv_out, kernels, padding, dropout)
 
     def forward(self, x, mask=None):
