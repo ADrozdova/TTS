@@ -16,14 +16,14 @@ class FastSpeech(BaseModel):
                                n_heads, fft_emb, attn_dropout,
                                conv_in, conv_hidden, conv_out, kernels, padding, dropout,
                                )
-        self.leb_reg = LengthRegulator(dp_in_size, dp_hidden, dp_kernel_size, dp_dropout, dp_out_size)
+        self.len_reg = LengthRegulator(dp_in_size, dp_hidden, dp_kernel_size, dp_dropout, dp_out_size)
         self.decoder = Decoder(decoder_blocks,
                                n_heads, fft_emb, attn_dropout,
                                conv_in, conv_hidden, conv_out, kernels, padding, dropout)
         self.fc = nn.Linear(fc_in, fc_mel)
 
-    def forward(self, input, durations=None):
-        output = self.encoder(input)
+    def forward(self, x, durations=None):
+        output = self.encoder(x)
         if self.training:
             output, dp = self.len_reg(output, target=durations)
             output = self.decoder(output)
