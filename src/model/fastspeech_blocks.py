@@ -124,18 +124,21 @@ class LengthRegulator(nn.Module):
         super(LengthRegulator, self).__init__()
         self.dp = DurationPredictor(dp_in_size, dp_hidden, dp_kernel_size, dp_dropout, dp_out_size)
 
-    def LR(self, x, dp_output, alpha=1.0, inference=False):
-        L, B, D = x.size()
-        dp_output = torch.round(dp_output * alpha).to(torch.long)
-        if inference:
-            dp_output[dp_output <= 0] = 1
-        T = int(torch.sum(dp_output, dim=-1).max().item())
-        expanded = x.new_zeros(T, B, D)
+    def LR(self, x, dp_output, mel_max_length=None):
+        dp_output = torch.round(dp_output).to(torch.long)
+        expand_max_len = torch.max(torch.sum(dp_output, -1), -1)[0]
+        alignment = torch.zeros(dp_output.size(0),
+                                expand_max_len.item(),
+                                dp_output.size(1)).numpy()
+        alignment = create_alignment(alignment,
+                                     dp_output.cpu().numpy())
+        alignment = torch.from_numpy(alignment).to(device)
 
-        for i, d in enumerate(dp_output):
-            mel_len = torch.sum(d).item()
-            expanded[:mel_len, i] = torch.repeat_interleave(x[:, i], d, dim=0)
-        return expanded
+        output = alignment @ x
+        if mel_max_length:
+            output = F.pad(
+                output, (0, 0, 0, mel_max_length - output.size(1), 0, 0))
+        return output
 
     def forward(self, x, alpha=1.0, target=None):
         durations = torch.exp(self.dp(x))
