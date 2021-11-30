@@ -68,8 +68,7 @@ class Trainer(BaseTrainer):
         """
         Move all necessary tensors to the HPU
         """
-        for tensor_for_gpu in ["spectrogram", "text_encoded"]:
-            batch[tensor_for_gpu] = batch[tensor_for_gpu].to(device)
+        batch = batch.to(device)
         return batch
 
     def _clip_grad_norm(self):
@@ -95,6 +94,7 @@ class Trainer(BaseTrainer):
                 batch = self.process_batch(
                     batch,
                     is_train=True,
+                    metrics=self.train_metrics,
                 )
             except RuntimeError as e:
                 if "out of memory" in str(e) and self.skip_oom:
@@ -116,16 +116,16 @@ class Trainer(BaseTrainer):
             self.train_metrics.update("grad norm", self.get_grad_norm())
             if batch_idx % self.log_step == 0:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
-                self.logger.debug(
-                    "Train Epoch: {} {} Loss: {:.6f}".format(
-                        epoch, self._progress(batch_idx), batch["loss"].item()
-                    )
-                )
+                # self.logger.debug(
+                #     "Train Epoch: {} {} Loss: {:.6f}".format(
+                #         epoch, self._progress(batch_idx), batch["loss"].item()
+                #     )
+                # )
                 self.writer.add_scalar(
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
                 self._log_predictions(part="train", **batch)
-                self._log_spectrogram(batch["spectrogram"])
+                self._log_spectrogram(batch.melspec_pred)
                 self._log_scalars(self.train_metrics)
             if batch_idx >= self.len_epoch:
                 break
@@ -137,7 +137,7 @@ class Trainer(BaseTrainer):
 
         return log
 
-    def process_batch(self, batch, is_train: bool):
+    def process_batch(self, batch, is_train: bool, metrics: MetricTracker):
         batch = self.move_batch_to_device(batch, self.device)
 
         batch.durations = self.aligner(
@@ -188,11 +188,12 @@ class Trainer(BaseTrainer):
                 batch = self.process_batch(
                     batch,
                     is_train=False,
+                    metrics=self.valid_metrics,
                 )
             self.writer.set_step(epoch * self.len_epoch, "valid")
             self._log_scalars(self.valid_metrics)
             self._log_predictions(part="val", **batch)
-            self._log_spectrogram(batch["spectrogram"])
+            self._log_spectrogram(batch.melspec_pred)
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
