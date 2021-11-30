@@ -11,4 +11,4 @@ Pillow~=8.1.2
 torchvision~=0.10.1
 tqdm~=4.62.3
 googledrivedownloader
-gitpython
+gitpython==3.1.24

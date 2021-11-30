@@ -1,7 +1,7 @@
 from torch import nn
 
-from fastspeech_blocks import Encoder, Decoder, LengthRegulator
 from src.base.base_model import BaseModel
+from src.model.fastspeech_blocks import Encoder, Decoder, LengthRegulator
 
 
 class FastSpeech(BaseModel):
