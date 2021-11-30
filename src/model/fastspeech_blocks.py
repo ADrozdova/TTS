@@ -53,7 +53,7 @@ class Encoder(nn.Module):
         return mask
 
     def forward(self, x):
-        out = self.emb(x)
+        out = self.embedding(x)
         mask = self.get_attn_mask(x)
         for layer in self.layers:
             out, _ = layer(out, mask)
