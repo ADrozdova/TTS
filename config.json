@@ -13,7 +13,7 @@
     "type": "FastSpeech",
     "args": {
       "voc_size": 51,
-      "encoder_in_size": 256,
+      "encoder_in_size": 384,
       "encoder_blocks": 6,
       "n_heads": 2,
       "fft_emb": 384,
