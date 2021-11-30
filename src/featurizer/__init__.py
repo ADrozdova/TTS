@@ -1,1 +1,1 @@
-from featurizer import MelSpectrogram, MelSpectrogramConfig
+from src.featurizer.featurizer import MelSpectrogram, MelSpectrogramConfig

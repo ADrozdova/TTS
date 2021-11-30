@@ -1,1 +1,1 @@
-from vocoder import Vocoder
+from src.vocoder.vocoder import Vocoder
