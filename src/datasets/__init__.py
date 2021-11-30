@@ -1,1 +1,1 @@
-from ljspeech import LJSpeechDataset
+from src.datasets.ljspeech import LJSpeechDataset
