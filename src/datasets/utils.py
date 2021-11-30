@@ -7,7 +7,7 @@ from src.collate_fn.collate import LJSpeechCollator
 from src.utils.parse_config import ConfigParser
 
 
-def get_dataloaders(configs: ConfigParser, root):
+def get_dataloaders(configs: ConfigParser):
     dataloaders = {}
     for split, params in configs["data"].items():
         num_workers = params.get("num_workers", 1)
@@ -15,17 +15,10 @@ def get_dataloaders(configs: ConfigParser, root):
         # create and join datasets
         datasets = []
 
-        # {
-        #           "type": "LJSpeechDataset",
-        #           "args": {
-        #             "part": "train",
-        #             "root": "."
-        #           }
-
         for ds in params["datasets"]:
             print(ds)
             datasets.append(configs.init_obj(
-                ds, src.datasets, root=root))
+                ds, src.datasets))
         assert len(datasets)
         if len(datasets) > 1:
             dataset = ChainDataset(datasets)
