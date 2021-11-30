@@ -8,7 +8,7 @@ class FastSpeechLoss(nn.Module):
 
     def forward(self, batch):
         len = min(batch.durations.shape[-1], batch.duration_pred.shape[-1])
-        duration_loss = self.mse_loss(batch.durations, batch.duration_pred)
+        duration_loss = self.mse_loss(batch.durations[:, :len], batch.duration_pred[:, :len])
 
         len = min(batch.melspec.shape[-1], batch.melspec_prediction.shape[-1])
         mel_loss = self.mse_loss(batch.melspec[:, :, :len], batch.melspec_pred[:, :, :len])
