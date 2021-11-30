@@ -29,8 +29,7 @@ def main(config):
     logger = config.get_logger("train")
 
     vocoder = Vocoder("waveglow_256channels_universal_v5.pt")
-    melspec = MelSpectrogram(**config["preprocessing"]["melspec"])
-    aligner = GraphemeAligner(**config["aligner"])
+    aligner = GraphemeAligner()
 
     # setup data_loader instances
     dataloaders = get_dataloaders(config)

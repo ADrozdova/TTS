@@ -12,26 +12,26 @@
   "arch": {
     "type": "FastSpeech",
     "args": {
-      "voc_size": ,
+      "voc_size": 51,
       "encoder_in_size": 256,
       "encoder_blocks": 6,
       "n_heads": 2,
       "fft_emb": 384,
       "attn_dropout",
-      "conv_in",
-      "conv_hidden",
-      "conv_out",
+      "conv_in": 384,
+      "conv_hidden": 1536,
+      "conv_out": 384,
       "kernels":  [3, 3],
       "padding": [1, 1],
       "dropout": 0.1,
       "decoder_blocks": 6,
       "dp_in_size": 384,
-      "dp_hidden",
+      "dp_hidden": 384,
       "dp_kernel_size": 3,
-      "dp_dropout",
-      "dp_out_size",
-      "fc_in",
-      "fc_mel"
+      "dp_dropout": 0.1,
+      "dp_out_size": 384,
+      "fc_in": 384,
+      "fc_mel": 80
     }
   },
   "data": {
@@ -75,8 +75,8 @@
   "lr_scheduler": {
     "type": "OneCycleLR",
     "args": {
-      "steps_per_epoch": 2895,
-      "epochs": 120,
+      "steps_per_epoch": 32,
+      "epochs": 10,
       "anneal_strategy": "linear",
       "max_lr": 5e-4,
       "pct_start": 0.2
