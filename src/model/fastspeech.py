@@ -28,7 +28,7 @@ class FastSpeech(BaseModel):
             output, dp = self.len_reg(output, target=durations)
             output = self.decoder(output)
             output = self.fc(output).transpose(1, 2)
-            return output, dp.squeeze(-1)
+            return output, dp.unsqueeze(0)
 
         output, dp = self.len_reg(output)
         output = self.decoder(output)

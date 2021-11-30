@@ -153,7 +153,7 @@ class Trainer(BaseTrainer):
         batch.to(device)
         output, durations = self.model(batch.tokens, batch.durations)
 
-        batch.mel_pred = output
+        batch.melызус_pred = output
         batch.duration_pred = durations
 
         loss, mel_loss, duration_loss = self.criterion(batch)
@@ -165,8 +165,8 @@ class Trainer(BaseTrainer):
                 self.lr_scheduler.step()
 
         metrics.update("loss", loss.item())
-        metrics.update("mel_loss", mel_loss.item())
-        metrics.update("duration_loss", duration_loss.item())
+        metrics.update("mel loss", mel_loss.item())
+        metrics.update("duration loss", duration_loss.item())
 
         return batch
 
@@ -234,12 +234,12 @@ class Trainer(BaseTrainer):
         to_log_pred = []
         to_log_pred_raw = []
         for pred, target, raw_pred in tuples[:examples_to_log]:
-            wer = calc_wer(target, pred) * 100
-            cer = calc_cer(target, pred) * 100
-            to_log_pred.append(
-                f"true: '{target}' | pred: '{pred}' "
-                f"| wer: {wer:.2f} | cer: {cer:.2f}"
-            )
+            # wer = calc_wer(target, pred) * 100
+            # cer = calc_cer(target, pred) * 100
+            # to_log_pred.append(
+            #     f"true: '{target}' | pred: '{pred}' "
+            #     f"| wer: {wer:.2f} | cer: {cer:.2f}"
+            # )
             to_log_pred_raw.append(f"true: '{target}' | pred: '{raw_pred}'\n")
         self.writer.add_text(f"predictions", "< < < < > > > >".join(to_log_pred))
         self.writer.add_text(
