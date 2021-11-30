@@ -70,6 +70,8 @@ def main(config):
         len_epoch=config["trainer"].get("len_epoch", None)
     )
 
+    trainer.train()
+
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser(description="PyTorch Template")
