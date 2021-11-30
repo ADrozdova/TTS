@@ -8,8 +8,7 @@ import string
 from torch import Tensor
 from torch.utils.data import Dataset
 
-from hw_asr.base.base_text_encoder import BaseTextEncoder
-from hw_asr.utils.parse_config import ConfigParser
+from src.utils.parse_config import ConfigParser
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +17,6 @@ class BaseDataset(Dataset):
     def __init__(
         self,
         index,
-        text_encoder: BaseTextEncoder,
         config_parser: ConfigParser,
         wave_augs=None,
         spec_augs=None,
@@ -26,7 +24,6 @@ class BaseDataset(Dataset):
         max_audio_length=None,
         max_text_length=None,
     ):
-        self.text_encoder = text_encoder
         self.config_parser = config_parser
         self.wave_augs = wave_augs
         self.spec_augs = spec_augs
