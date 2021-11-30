@@ -37,4 +37,6 @@ class MultiHeadAttention(nn.Module):
         output = torch.matmul(attention_scores, v)
         output = torch.cat(torch.split(output, 1, dim=1), dim=-1).squeeze(1)
 
+        output = self.fc(output)
+
         return output, attention_scores.sum(dim=1)
