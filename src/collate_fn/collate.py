@@ -22,7 +22,8 @@ class Batch:
         self.waveform_length = self.waveform_length.to(device)
         self.tokens = self.tokens.to(device)
         self.token_lengths = self.token_lengths.to(device)
-        self.durations = self.durations.to(device)
+        if self.durations is not None:
+            self.durations = self.durations.to(device)
         return self
 
 
