@@ -12,15 +12,18 @@ def get_dataloaders(configs: ConfigParser, root):
     for split, params in configs["data"].items():
         num_workers = params.get("num_workers", 1)
 
-        # set train augmentations
-        if split == 'train':
-            wave_augs, spec_augs = src.augmentations.from_configs(configs)
-        else:
-            wave_augs, spec_augs = None, None
-
         # create and join datasets
         datasets = []
+
+        # {
+        #           "type": "LJSpeechDataset",
+        #           "args": {
+        #             "part": "train",
+        #             "root": "."
+        #           }
+
         for ds in params["datasets"]:
+            print(ds)
             datasets.append(configs.init_obj(
                 ds, src.datasets, root=root))
         assert len(datasets)
