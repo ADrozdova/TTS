@@ -137,7 +137,7 @@ class Trainer(BaseTrainer):
 
         return log
 
-    def process_batch(self, batch, is_train: bool, metrics: MetricTracker):
+    def process_batch(self, batch, is_train: bool):
         batch = self.move_batch_to_device(batch, self.device)
 
         batch.durations = self.aligner(
