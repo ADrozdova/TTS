@@ -38,7 +38,7 @@ def get_dataloaders(configs: ConfigParser):
 
         # create dataloader
         dataloader = DataLoader(
-            dataset, batch_size=bs, collate_fn=LJSpeechCollator,
+            dataset, batch_size=bs, collate_fn=LJSpeechCollator(),
             shuffle=shuffle, num_workers=num_workers, batch_sampler=batch_sampler)
         dataloaders[split] = dataloader
     return dataloaders
