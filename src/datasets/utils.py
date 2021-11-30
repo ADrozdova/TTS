@@ -2,13 +2,9 @@ from operator import xor
 
 from torch.utils.data import DataLoader, ChainDataset
 
-import src.batch_sampler as batch_sampler_module
 import src.datasets
-from src.base.base_text_encoder import BaseTextEncoder
-from src.collate_fn.collate import collate_fn
+from src.collate_fn.collate import LJSpeechCollator
 from src.utils.parse_config import ConfigParser
-from numpy import arange
-from torch.utils.data import Subset
 
 
 def get_dataloaders(configs: ConfigParser, root):
@@ -40,16 +36,13 @@ def get_dataloaders(configs: ConfigParser, root):
             bs = params["batch_size"]
             shuffle = True
             batch_sampler = None
-        elif "batch_sampler" in params:
-            batch_sampler = configs.init_obj(params["batch_sampler"], batch_sampler_module,
-                                             data_source=dataset)
             bs, shuffle = 1, False
         else:
             raise Exception()
 
         # create dataloader
         dataloader = DataLoader(
-            dataset, batch_size=bs, collate_fn=collate_fn,
+            dataset, batch_size=bs, collate_fn=LJSpeechCollator,
             shuffle=shuffle, num_workers=num_workers, batch_sampler=batch_sampler)
         dataloaders[split] = dataloader
     return dataloaders
