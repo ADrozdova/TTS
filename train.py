@@ -6,13 +6,14 @@ import numpy as np
 import torch
 
 import src.loss as module_loss
-import src.metric as module_metric
 import src.model as module_arch
 from src.datasets.utils import get_dataloaders
-from src.text_encoder.ctc_char_text_encoder import CTCCharTextEncoder
 from src.trainer import Trainer
 from src.utils import prepare_device
 from src.utils.parse_config import ConfigParser
+from src.vocoder import Vocoder
+from src.featurizer import MelSpectrogram, MelSpectrogramConfig
+from src.aligner import GraphemeAligner
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -27,28 +28,28 @@ np.random.seed(SEED)
 def main(config):
     logger = config.get_logger("train")
 
-    # text_encoder
-    text_encoder = CTCCharTextEncoder.get_simple_alphabet()
+    vocoder = Vocoder("waveglow_256channels_universal_v5.pt")
+    melspec = MelSpectrogram(**config["preprocessing"]["melspec"])
+    aligner = GraphemeAligner(**config["aligner"])
 
     # setup data_loader instances
-    dataloaders = get_dataloaders(config, text_encoder)
+    dataloaders = get_dataloaders(config)
 
     # build model architecture, then print to console
-    model = config.init_obj(config["arch"])
+    model = config.init_obj(config["arch"], module_arch)
     logger.info(model)
 
     # prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config["n_gpu"])
     model = model.to(device)
+    vocoder = vocoder.to(device)
+    aligner = aligner.to(device)
+
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
 
     # get function handles of loss and metrics
     loss_module = config.init_obj(config["loss"], module_loss).to(device)
-    metrics = [
-        config.init_obj(metric_dict, module_metric, text_encoder=text_encoder)
-        for metric_dict in config["metrics"]
-    ]
 
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
@@ -58,18 +59,17 @@ def main(config):
     trainer = Trainer(
         model,
         loss_module,
-        metrics,
         optimizer,
-        text_encoder=text_encoder,
         config=config,
         device=device,
         data_loader=dataloaders["train"],
+        aligner=aligner,
+        featurizer=MelSpectrogram(MelSpectrogramConfig()),
+        vocoder=vocoder,
         valid_data_loader=dataloaders["val"],
         lr_scheduler=lr_scheduler,
         len_epoch=config["trainer"].get("len_epoch", None)
     )
-
-    trainer.train()
 
 
 if __name__ == "__main__":

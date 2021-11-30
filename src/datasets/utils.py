@@ -11,7 +11,7 @@ from numpy import arange
 from torch.utils.data import Subset
 
 
-def get_dataloaders(configs: ConfigParser, text_encoder: BaseTextEncoder):
+def get_dataloaders(configs: ConfigParser, root):
     dataloaders = {}
     for split, params in configs["data"].items():
         num_workers = params.get("num_workers", 1)
@@ -26,8 +26,7 @@ def get_dataloaders(configs: ConfigParser, text_encoder: BaseTextEncoder):
         datasets = []
         for ds in params["datasets"]:
             datasets.append(configs.init_obj(
-                ds, src.datasets, text_encoder=text_encoder, config_parser=configs,
-                wave_augs=wave_augs, spec_augs=spec_augs))
+                ds, src.datasets, root=root))
         assert len(datasets)
         if len(datasets) > 1:
             dataset = ChainDataset(datasets)

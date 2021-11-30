@@ -11,11 +11,10 @@ from torch import nn
 
 class Vocoder(nn.Module):
 
-    def __init__(self):
+    def __init__(self, path):
         super(Vocoder, self).__init__()
 
-        model = torch.load('waveglow_256channels_universal_v5.pt', map_location='cpu')[
-            'model']
+        model = torch.load(path, map_location='cpu')['model']
         self.net = model.remove_weightnorm(model)
 
     @torch.no_grad()

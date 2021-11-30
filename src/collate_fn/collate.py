@@ -13,6 +13,9 @@ class Batch:
     tokens: torch.Tensor
     token_lengths: torch.Tensor
     durations: Optional[torch.Tensor] = None
+    duration_pred: Optional[torch.Tensor] = None
+    melspec: Optional[torch.Tensor] = None
+    melspec_pred: Optional[torch.Tensor] = None
 
     def to(self, device: torch.device) -> 'Batch':
         self.waveform = self.waveform.to(device)

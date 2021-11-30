@@ -8,10 +8,13 @@ from torch.nn.utils import clip_grad_norm_
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
 
-from hw_asr.base import BaseTrainer
-from hw_asr.logger.utils import plot_spectrogram_to_buf
-from hw_asr.metric.utils import calc_cer, calc_wer
-from hw_asr.utils import inf_loop, MetricTracker
+from src.base import BaseTrainer
+from src.logger.utils import plot_spectrogram_to_buf
+from src.utils import inf_loop, MetricTracker
+from src.featurizer import MelSpectrogramConfig
+
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 class Trainer(BaseTrainer):
     """
@@ -22,20 +25,20 @@ class Trainer(BaseTrainer):
             self,
             model,
             criterion,
-            metrics,
             optimizer,
             config,
             device,
             data_loader,
-            text_encoder,
+            aligner,
+            featurizer,
+            vocoder,
             valid_data_loader=None,
             lr_scheduler=None,
             len_epoch=None,
             skip_oom=True,
     ):
-        super().__init__(model, criterion, metrics, optimizer, config, device)
+        super().__init__(model, criterion, optimizer, config, device)
         self.skip_oom = skip_oom
-        self.text_encoder = text_encoder
         self.config = config
         self.data_loader = data_loader
         if len_epoch is None:
@@ -49,12 +52,15 @@ class Trainer(BaseTrainer):
         self.do_validation = self.valid_data_loader is not None
         self.lr_scheduler = lr_scheduler
         self.log_step = 10
+        self.vocoder = vocoder
+        self.featurizer = featurizer
+        self.aligner = aligner
 
         self.train_metrics = MetricTracker(
-            "loss", "grad norm", *[m.name for m in self.metrics], writer=self.writer
+            "loss", "duration loss", "mel loss", "grad norm", writer=self.writer
         )
         self.valid_metrics = MetricTracker(
-            "loss", *[m.name for m in self.metrics], writer=self.writer
+            "loss", "duration loss", "mel loss", writer=self.writer
         )
 
     @staticmethod
@@ -89,7 +95,6 @@ class Trainer(BaseTrainer):
                 batch = self.process_batch(
                     batch,
                     is_train=True,
-                    metrics=self.train_metrics,
                 )
             except RuntimeError as e:
                 if "out of memory" in str(e) and self.skip_oom:
@@ -134,30 +139,35 @@ class Trainer(BaseTrainer):
 
     def process_batch(self, batch, is_train: bool, metrics: MetricTracker):
         batch = self.move_batch_to_device(batch, self.device)
-        if is_train:
-            self.optimizer.zero_grad()
-        outputs = self.model(**batch)
 
-        if type(outputs) is dict:
-            batch.update(outputs)
-        else:
-            batch["logits"] = outputs
-
-        batch["log_probs"] = F.log_softmax(batch["logits"], dim=-1)
-        batch["log_probs_length"] = self.model.transform_input_lengths(
-            batch["spectrogram_length"]
+        batch.durations = self.aligner(
+            batch.waveform.to(device), batch.waveform_length, batch.transcript
         )
-        batch["loss"] = self.criterion(**batch)
+
+        mel_config = MelSpectrogramConfig()
+        mel_len = batch.waveform_length / mel_config.hop_length
+        batch.durations *= mel_len.repeat(batch.durations.shape[-1], 1).transpose(0, 1)
+        mels = self.featurizer(batch.waveform)
+        mels = mels.to(device)
+        batch.melspec = mels
+        batch.to(device)
+        output, durations = self.model(batch.tokens, batch.durations)
+
+        batch.mel_pred = output
+        batch.duration_pred = durations
+
+        loss, mel_loss, duration_loss = self.criterion(batch)
         if is_train:
-            batch["loss"].backward()
+            loss.backward()
             self._clip_grad_norm()
             self.optimizer.step()
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
-        metrics.update("loss", batch["loss"].item())
-        for met in self.metrics:
-            metrics.update(met.name, met(**batch))
+        metrics.update("loss", loss.item())
+        metrics.update("mel_loss", mel_loss.item())
+        metrics.update("duration_loss", duration_loss.item())
+
         return batch
 
     def _valid_epoch(self, epoch):
@@ -178,7 +188,6 @@ class Trainer(BaseTrainer):
                 batch = self.process_batch(
                     batch,
                     is_train=False,
-                    metrics=self.valid_metrics,
                 )
             self.writer.set_step(epoch * self.len_epoch, "valid")
             self._log_scalars(self.valid_metrics)

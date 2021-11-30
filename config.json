@@ -12,11 +12,11 @@
   "arch": {
     "type": "FastSpeech",
     "args": {
-      "voc_size":  51,
+      "voc_size": ,
       "encoder_in_size": 256,
-      "encoder_blocks": 4,
+      "encoder_blocks": 6,
       "n_heads": 2,
-      "fft_emb": 1024,
+      "fft_emb": 384,
       "attn_dropout",
       "conv_in",
       "conv_hidden",
@@ -24,7 +24,7 @@
       "kernels":  [3, 3],
       "padding": [1, 1],
       "dropout": 0.1,
-      "decoder_blocks",
+      "decoder_blocks": 6,
       "dp_in_size": 384,
       "dp_hidden",
       "dp_kernel_size": 3,
@@ -42,9 +42,8 @@
         {
           "type": "LJSpeechDataset",
           "args": {
-            "max_audio_length": 20.0,
-            "max_text_length": 200,
-            "data_dir": "/home/jupyter/mnt/s3/bucket-hse-rw/data/datasets/librispeech"
+            "part": "train",
+            "root": "."
           }
         }
       ]
@@ -54,25 +53,10 @@
       "num_workers": 8,
       "datasets": [
         {
-          "type": "LibrispeechDataset",
+          "type": "LJSpeechDataset",
           "args": {
-            "part": "dev-clean",
-            "max_audio_length": 20.0,
-            "max_text_length": 200,
-            "data_dir": "/home/jupyter/mnt/s3/bucket-hse-rw/data/datasets/librispeech"
-          }
-        }
-      ]
-    },
-    "test": {
-      "batch_size": 32,
-      "num_workers": 8,
-      "datasets": [
-        {
-          "type": "LibrispeechDataset",
-          "args": {
-            "part": "test-clean",
-            "data_dir": "/home/jupyter/mnt/s3/bucket-hse-rw/data/datasets/librispeech"
+            "part": "val",
+            "root": "."
           }
         }
       ]
@@ -85,23 +69,9 @@
     }
   },
   "loss": {
-    "type": "CTCLoss",
+    "type": "FastSpeechLoss",
     "args": {}
   },
-  "metrics": [
-    {
-      "type": "ArgmaxWERMetric",
-      "args": {
-        "name": "WER (argmax)"
-      }
-    },
-    {
-      "type": "ArgmaxCERMetric",
-      "args": {
-        "name": "CER (argmax)"
-      }
-    }
-  ],
   "lr_scheduler": {
     "type": "OneCycleLR",
     "args": {
@@ -113,7 +83,8 @@
     }
   },
   "trainer": {
-    "epochs": 120,
+    "epochs": 10,
+    "len_epoch": 1,
     "save_dir": "saved/",
     "save_period": 1,
     "verbosity": 2,
