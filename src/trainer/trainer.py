@@ -153,7 +153,7 @@ class Trainer(BaseTrainer):
         batch.to(device)
         output, durations = self.model(batch.tokens, batch.durations)
 
-        batch.melызус_pred = output
+        batch.melspec_pred = output
         batch.duration_pred = durations
 
         loss, mel_loss, duration_loss = self.criterion(batch)
