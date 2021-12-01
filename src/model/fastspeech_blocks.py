@@ -118,14 +118,14 @@ class LengthRegulator(nn.Module):
         expand_max_len = torch.max(torch.sum(dp_output, -1), -1)[0]
         output = torch.zeros(dp_output.size(0),
                              expand_max_len.item(),
-                             dp_output.size(1)).numpy()
+                             x.shape[2]).numpy()
         x = x.cpu().detach()
         for i in range(x.shape[0]):
             count = 0
             for j in range(x.shape[1]):
                 output[i][count:count + dp_output[i][j]] = x[i][j]
                 count = count + dp_output[i][j]
-        return output
+        return torch.Tensor(output).to(device)
 
     def forward(self, x, target=None):
         durations = torch.exp(self.dp(x))
