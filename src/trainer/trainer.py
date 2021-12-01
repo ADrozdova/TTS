@@ -124,9 +124,8 @@ class Trainer(BaseTrainer):
                 self.writer.add_scalar(
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
-                self._log_predictions(part="train", **batch)
-                self._log_spectrogram(batch.melspec)
-                self._log_spectrogram(batch.melspec_pred)
+                self._log_spectrogram(batch.melspec.cpu().detach().numpy())
+                self._log_spectrogram(batch.melspec_pred.cpu().detach().numpy())
                 self._log_scalars(self.train_metrics)
             if batch_idx >= self.len_epoch:
                 break
@@ -139,19 +138,16 @@ class Trainer(BaseTrainer):
         return log
 
     def process_batch(self, batch, is_train: bool, metrics: MetricTracker):
-        batch = self.move_batch_to_device(batch, self.device)
 
         batch.durations = self.aligner(
             batch.waveform.to(device), batch.waveform_length, batch.transcript
         )
-
         mel_config = MelSpectrogramConfig()
         mel_len = batch.waveform_length / mel_config.hop_length
         batch.durations *= mel_len.repeat(batch.durations.shape[-1], 1).transpose(0, 1)
         mels = self.featurizer(batch.waveform)
-        mels = mels.to(device)
         batch.melspec = mels
-        batch.to(device)
+        batch = self.move_batch_to_device(batch, self.device)
         output, durations = self.model(batch.tokens, batch.durations)
 
         batch.melspec_pred = output
@@ -236,22 +232,22 @@ class Trainer(BaseTrainer):
         to_log_pred = []
         to_log_pred_raw = []
         for pred, target, raw_pred in tuples[:examples_to_log]:
-            # wer = calc_wer(target, pred) * 100
-            # cer = calc_cer(target, pred) * 100
-            # to_log_pred.append(
-            #     f"true: '{target}' | pred: '{pred}' "
-            #     f"| wer: {wer:.2f} | cer: {cer:.2f}"
-            # )
             to_log_pred_raw.append(f"true: '{target}' | pred: '{raw_pred}'\n")
         self.writer.add_text(f"predictions", "< < < < > > > >".join(to_log_pred))
         self.writer.add_text(
             f"predictions_raw", "< < < < > > > >".join(to_log_pred_raw)
         )
 
-    def _log_spectrogram(self, spectrogram_batch):
-        spectrogram = random.choice(spectrogram_batch)
-        image = PIL.Image.open(plot_spectrogram_to_buf(torch.transpose(spectrogram.cpu(), 0, 1).log()))
-        self.writer.add_image("spectrogram", ToTensor()(image))
+    def _log_spectrogram(self, spectrogram_batch_true, spectrogram_batch_pred):
+        idx = random.choice(range(len(spectrogram_batch_true)))
+        spectrogram_true = spectrogram_batch_true[idx]
+        spectrogram_pred = spectrogram_batch_pred[idx]
+        spectrogram_true = spectrogram_true.cpu().detach()
+        spectrogram_pred = spectrogram_pred.cpu().detach()
+        image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram_true.log()))
+        self.writer.add_image("spectrogram true", ToTensor()(image))
+        image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram_pred.log()))
+        self.writer.add_image("spectrogram pred", ToTensor()(image))
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):

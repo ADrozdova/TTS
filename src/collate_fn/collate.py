@@ -24,6 +24,12 @@ class Batch:
         self.token_lengths = self.token_lengths.to(device)
         if self.durations is not None:
             self.durations = self.durations.to(device)
+        if self.duration_pred is not None:
+            self.duration_pred = self.duration_pred.to(device)
+        if self.melspec is not None:
+            self.melspec = self.melspec.to(device)
+        if self.melspec_pred is not None:
+            self.melspec_pred = self.melspec_pred.to(device)
         return self
 
 
