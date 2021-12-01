@@ -124,8 +124,7 @@ class Trainer(BaseTrainer):
                 self.writer.add_scalar(
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
-                self._log_spectrogram(batch.melspec.cpu().detach().numpy())
-                self._log_spectrogram(batch.melspec_pred.cpu().detach().numpy())
+                self._log_spectrogram(batch.melspec, batch.melspec_pred)
                 self._log_scalars(self.train_metrics)
             if batch_idx >= self.len_epoch:
                 break
@@ -190,8 +189,7 @@ class Trainer(BaseTrainer):
             self.writer.set_step(epoch * self.len_epoch, "valid")
             self._log_scalars(self.valid_metrics)
             # self._log_predictions(part="val", **batch)
-            self._log_spectrogram(batch.melspec)
-            self._log_spectrogram(batch.melspec_pred)
+            self._log_spectrogram(batch.melspec, batch.melspec_pred)
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
