@@ -47,19 +47,6 @@
           }
         }
       ]
-    },
-    "val": {
-      "batch_size": 32,
-      "num_workers": 8,
-      "datasets": [
-        {
-          "type": "LJSpeechDataset",
-          "args": {
-            "part": "val",
-            "root": "."
-          }
-        }
-      ]
     }
   },
   "optimizer": {

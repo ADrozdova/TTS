@@ -39,12 +39,12 @@ def main(config):
     aligner = GraphemeAligner()
 
     # setup data_loader instances
-    # dataloaders = get_dataloaders(config)
-    dataloaders = {}
-    dataset = LJSpeechDataset(".", "train")
-    val_dataset = LJSpeechDataset(".", "val")
-    dataloaders['train'] = DataLoader(dataset, num_workers=4, batch_size=2, collate_fn=LJSpeechCollator())
-    dataloaders['val'] = DataLoader(val_dataset, num_workers=4, batch_size=2, collate_fn=LJSpeechCollator())
+    dataloaders = get_dataloaders(config)
+    # dataloaders = {}
+    # dataset = LJSpeechDataset(".", "train")
+    # val_dataset = LJSpeechDataset(".", "val")
+    # dataloaders['train'] = DataLoader(dataset, num_workers=4, batch_size=2, collate_fn=LJSpeechCollator())
+    # dataloaders['val'] = DataLoader(val_dataset, num_workers=4, batch_size=2, collate_fn=LJSpeechCollator())
 
     # build model architecture, then print to console
     model = config.init_obj(config["arch"], module_arch)
