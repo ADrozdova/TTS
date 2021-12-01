@@ -244,9 +244,9 @@ class Trainer(BaseTrainer):
         spectrogram_pred = spectrogram_batch_pred[idx]
         spectrogram_true = spectrogram_true.cpu().detach()
         spectrogram_pred = spectrogram_pred.cpu().detach()
-        image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram_true.log()))
+        image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram_true))
         self.writer.add_image("spectrogram true", ToTensor()(image))
-        image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram_pred.log()))
+        image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram_pred))
         self.writer.add_image("spectrogram pred", ToTensor()(image))
 
     def _log_audio(self, waveform_true, melspec_pred):
