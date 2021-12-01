@@ -125,6 +125,7 @@ class Trainer(BaseTrainer):
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
                 self._log_spectrogram(batch.melspec, batch.melspec_pred)
+                self._log_audio(batch.waveform, batch.melspec_pred)
                 self._log_scalars(self.train_metrics)
             if batch_idx >= self.len_epoch:
                 break
@@ -190,6 +191,7 @@ class Trainer(BaseTrainer):
             self._log_scalars(self.valid_metrics)
             # self._log_predictions(part="val", **batch)
             self._log_spectrogram(batch.melspec, batch.melspec_pred)
+            self._log_audio(batch.waveform, batch.melspec_pred)
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
@@ -246,6 +248,12 @@ class Trainer(BaseTrainer):
         self.writer.add_image("spectrogram true", ToTensor()(image))
         image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram_pred.log()))
         self.writer.add_image("spectrogram pred", ToTensor()(image))
+
+    def _log_audio(self, waveform_true, melspec_pred):
+        idx = random.choice(range(len(melspec_pred)))
+        waveform_pred = self.vocoder.inference(melspec_pred[idx].transpose(-2, -1).unsqueeze(0)).squeeze(0)
+        self.writer.add_audio("audio true", waveform_true[idx].cpu())
+        self.writer.add_audio("audio pred", waveform_pred.cpu())
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):

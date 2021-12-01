@@ -30,8 +30,8 @@ class FFTBlock(nn.Module):
         self.attn = MultiHeadAttention(n_heads, conv_in, attn_dropout)
         self.conv = ConvFFT(conv_in, conv_hidden, conv_out, kernels, padding, dropout)
 
-    def forward(self, x, mask=None):
-        out, attn = self.attn(x, x, x, mask)
+    def forward(self, x, output=None):
+        out, attn = self.attn(x, x, x, output)
         out = self.conv(out)
         return out, attn
 
@@ -47,16 +47,16 @@ class Encoder(nn.Module):
                   for _ in range(encoder_blocks)]
         self.layers = nn.Sequential(*blocks)
 
-    def get_attn_mask(self, x):
-        mask = x.eq(0)
-        mask = mask.unsqueeze(1).expand(-1, x.shape[1], -1)
-        return mask
+    def get_attn_output(self, x):
+        output = x.eq(0)
+        output = output.unsqueeze(1).expand(-1, x.shape[1], -1)
+        return output
 
     def forward(self, x):
         out = self.embedding(x)
-        mask = self.get_attn_mask(x)
+        output = self.get_attn_output(x)
         for layer in self.layers:
-            out, _ = layer(out, mask)
+            out, _ = layer(out, output)
         return out
 
 
@@ -69,10 +69,10 @@ class Decoder(nn.Module):
                   for _ in range(decoder_blocks)]
         self.layers = nn.Sequential(*blocks)
 
-    def forward(self, x, mask=None):
+    def forward(self, x, output=None):
         out = x
         for layer in self.layers:
-            out, _ = layer(out, mask)
+            out, _ = layer(out, output)
         return out
 
 
@@ -113,19 +113,21 @@ class LengthRegulator(nn.Module):
         super(LengthRegulator, self).__init__()
         self.dp = DurationPredictor(dp_in_size, dp_hidden, dp_kernel_size, dp_dropout, dp_out_size)
 
-    def LR(self, x, dp_output):
-        dp_output = torch.round(dp_output).int()
-        expand_max_len = torch.max(torch.sum(dp_output, -1), -1)[0]
-        output = torch.zeros(dp_output.size(0),
-                             expand_max_len.item(),
-                             x.shape[2]).numpy()
-        x = x.cpu().detach()
-        for i in range(x.shape[0]):
-            count = 0
-            for j in range(x.shape[1]):
-                output[i][count:count + dp_output[i][j]] = x[i][j]
-                count = count + dp_output[i][j]
-        return torch.Tensor(output).to(device)
+    def LR(self, x, dur_pred):
+        expand_max_len = round(dur_pred.sum(-1).max().item())
+        output = torch.zeros(dur_pred.shape[0], dur_pred.shape[-1], expand_max_len)
+        for i in range(dur_pred.shape[0]):
+            start = 0
+            finish = 0
+            for j in range(dur_pred.shape[-1]):
+                diff = round(dur_pred[i][j].item())
+                finish += diff
+                output[i, j, start:finish] = 1
+                start += diff
+        output = output.to(device)
+        output = (x.transpose(-1, -2)) @ output
+
+        return output.transpose(-1, -2)
 
     def forward(self, x, target=None):
         durations = torch.exp(self.dp(x))
