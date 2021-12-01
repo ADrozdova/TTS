@@ -252,8 +252,8 @@ class Trainer(BaseTrainer):
     def _log_audio(self, waveform_true, melspec_pred):
         idx = random.choice(range(len(melspec_pred)))
         waveform_pred = self.vocoder.inference(melspec_pred[idx].unsqueeze(0)).squeeze(0)
-        self.writer.add_audio("audio true", waveform_true[idx].cpu())
-        self.writer.add_audio("audio pred", waveform_pred.cpu())
+        self.writer.add_audio("audio true", waveform_true[idx].cpu(), 22050)
+        self.writer.add_audio("audio pred", waveform_pred.cpu(), 22050)
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):
