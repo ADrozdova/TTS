@@ -52,7 +52,7 @@
   "optimizer": {
     "type": "AdamW",
     "args": {
-      "lr": 5e-4
+      "lr": 3e-4
     }
   },
   "loss": {
@@ -60,18 +60,14 @@
     "args": {}
   },
   "lr_scheduler": {
-    "type": "OneCycleLR",
+    "type": "ExponentialLR",
     "args": {
-      "steps_per_epoch": 1,
-      "epochs": 2000,
-      "anneal_strategy": "linear",
-      "max_lr": 5e-4,
-      "pct_start": 0.2
+      "gamma": 0.99
     }
   },
   "trainer": {
-    "epochs": 2000,
-    "len_epoch": 1,
+    "epochs": 200,
+    "len_epoch": 3,
     "save_dir": "saved/",
     "save_period": 100,
     "verbosity": 2,
