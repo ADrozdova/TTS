@@ -36,7 +36,7 @@
   },
   "data": {
     "train": {
-      "batch_size": 32,
+      "batch_size": 1,
       "num_workers": 8,
       "datasets": [
         {
@@ -62,15 +62,15 @@
   "lr_scheduler": {
     "type": "OneCycleLR",
     "args": {
-      "steps_per_epoch": 32,
-      "epochs": 10,
+      "steps_per_epoch": 1,
+      "epochs": 2000,
       "anneal_strategy": "linear",
       "max_lr": 5e-4,
       "pct_start": 0.2
     }
   },
   "trainer": {
-    "epochs": 10,
+    "epochs": 2000,
     "len_epoch": 1,
     "save_dir": "saved/",
     "save_period": 1,
