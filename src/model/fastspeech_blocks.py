@@ -119,6 +119,7 @@ class LengthRegulator(nn.Module):
         output = torch.zeros(dp_output.size(0),
                              expand_max_len.item(),
                              dp_output.size(1)).numpy()
+        x = x.cpu()
         for i in range(x.shape[0]):
             count = 0
             for j in range(x.shape[1]):

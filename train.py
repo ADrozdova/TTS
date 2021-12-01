@@ -67,6 +67,9 @@ def main(config):
     optimizer = config.init_obj(config["optimizer"], torch.optim, trainable_params)
     lr_scheduler = config.init_obj(config["lr_scheduler"], torch.optim.lr_scheduler, optimizer)
 
+    if not "val" in dataloaders:
+        dataloaders["val"] = None
+
     trainer = Trainer(
         model,
         loss_module,
