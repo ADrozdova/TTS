@@ -251,7 +251,7 @@ class Trainer(BaseTrainer):
 
     def _log_audio(self, waveform_true, melspec_pred):
         idx = random.choice(range(len(melspec_pred)))
-        waveform_pred = self.vocoder.inference(melspec_pred[idx].transpose(-2, -1).unsqueeze(0)).squeeze(0)
+        waveform_pred = self.vocoder.inference(melspec_pred[idx].unsqueeze(0)).squeeze(0)
         self.writer.add_audio("audio true", waveform_true[idx].cpu())
         self.writer.add_audio("audio pred", waveform_pred.cpu())
 
