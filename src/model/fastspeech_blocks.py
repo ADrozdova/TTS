@@ -108,46 +108,29 @@ class DurationPredictor(nn.Module):
         return out
 
 
-def create_alignment(x, durations):
-    N, L = durations.shape
-    for i in range(N):
-        count = 0
-        for j in range(L):
-            for k in range(durations[i][j]):
-                x[i][count + k][j] = 1
-            count = count + durations[i][j]
-    return x
-
-
 class LengthRegulator(nn.Module):
     def __init__(self, dp_in_size, dp_hidden, dp_kernel_size, dp_dropout, dp_out_size):
         super(LengthRegulator, self).__init__()
         self.dp = DurationPredictor(dp_in_size, dp_hidden, dp_kernel_size, dp_dropout, dp_out_size)
 
-    def LR(self, x, dp_output, mel_max_length=None):
-        dp_output = torch.round(dp_output).to(torch.long)
+    def LR(self, x, dp_output):
+        dp_output = torch.round(dp_output).int()
         expand_max_len = torch.max(torch.sum(dp_output, -1), -1)[0]
-        alignment = torch.zeros(dp_output.size(0),
-                                expand_max_len.item(),
-                                dp_output.size(1)).numpy()
-        alignment = create_alignment(alignment,
-                                     dp_output.cpu().numpy())
-        alignment = torch.from_numpy(alignment).to(device)
-
-        output = alignment @ x
-        if mel_max_length:
-            output = F.pad(
-                output, (0, 0, 0, mel_max_length - output.size(1), 0, 0))
+        output = torch.zeros(dp_output.size(0),
+                             expand_max_len.item(),
+                             dp_output.size(1)).numpy()
+        for i in range(x.shape[0]):
+            count = 0
+            for j in range(x.shape[1]):
+                output[i][count:count + dp_output[i][j]] = x[i][j]
+                count = count + dp_output[i][j]
         return output
 
-    def forward(self, x, alpha=1.0, target=None):
+    def forward(self, x, target=None):
         durations = torch.exp(self.dp(x))
         if target is not None:
             output = self.LR(x, target)
             return output, durations
         else:
-            duration_predictor_output = ((durations + 0.5) * alpha).int()
-            output = self.LR(x, duration_predictor_output)
-            mel_pos = torch.stack([torch.Tensor([i + 1 for i in range(output.size(1))])]).long().to(device)
-
-            return output, mel_pos
+            output = self.LR(x, durations)
+            return output, durations
