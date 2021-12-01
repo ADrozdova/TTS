@@ -144,6 +144,8 @@ class Trainer(BaseTrainer):
         )
         mel_config = MelSpectrogramConfig()
         mel_len = batch.waveform_length / mel_config.hop_length
+        batch = batch.to(torch.device('cpu'))
+        mel_len = mel_len.cpu()
         batch.durations *= mel_len.repeat(batch.durations.shape[-1], 1).transpose(0, 1)
         mels = self.featurizer(batch.waveform)
         batch.melspec = mels
