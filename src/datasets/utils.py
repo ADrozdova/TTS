@@ -30,9 +30,8 @@ def get_dataloaders(configs: ConfigParser):
             "You must provide batch_size or batch_sampler for each split"
         if "batch_size" in params:
             bs = params["batch_size"]
-            shuffle = True
+            shuffle = False
             batch_sampler = None
-            bs, shuffle = 1, False
         else:
             raise Exception()
 
