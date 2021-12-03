@@ -18,7 +18,7 @@ class LJSpeechDataset(torchaudio.datasets.LJSPEECH):
             return self.train_len
         if self.part == "val":
             return self.train_len
-        len = super().__len__()
+        full_size = super().__len__()
         train_size = int(0.8 * full_size)
         if self.mode == "train":
             return train_size
