@@ -1,5 +1,7 @@
+import math
+
 import torch
-import torch.nn.functional as F
+from torch import Tensor
 from torch import nn
 
 from src.model.attention import MultiHeadAttention
@@ -8,72 +10,69 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 class ConvFFT(nn.Module):
-    def __init__(self, conv_in, conv_hidden, conv_out, kernels, padding, dropout):
+    def __init__(self, in_size, hidden, kernels, padding, dropout):
         super(ConvFFT, self).__init__()
         self.layers = nn.Sequential(
-            nn.Conv1d(conv_in, conv_hidden, kernel_size=kernels[0], padding=padding[0]),
+            nn.Conv1d(in_size, hidden, kernel_size=kernels[0], padding=padding[0]),
             nn.ReLU(),
-            nn.Conv1d(conv_hidden, conv_out, kernel_size=kernels[1], padding=padding[1]),
+            nn.Conv1d(hidden, in_size, kernel_size=kernels[1], padding=padding[1]),
             nn.Dropout(dropout)
         )
-        self.ln = nn.LayerNorm(conv_out)
+        self.ln = nn.LayerNorm(in_size)
 
     def forward(self, x):
-        out = self.layers(x.transpose(-1, -2))
-        return self.ln(out.transpose(-1, -2) + x)
+        out = self.ln(x)
+        out = self.layers(out.transpose(-1, -2))
+        return out.transpose(-1, -2) + x
 
 
 class FFTBlock(nn.Module):
-    def __init__(self, n_heads, fft_emb, attn_dropout,
-                 conv_in, conv_hidden, conv_out, kernels, padding, dropout):
+    def __init__(self, in_size, n_heads, hidden, kernels, padding, attn_dropout=0.1, dropout=0.1):
         super(FFTBlock, self).__init__()
-        self.attn = MultiHeadAttention(n_heads, conv_in, attn_dropout)
-        self.conv = ConvFFT(conv_in, conv_hidden, conv_out, kernels, padding, dropout)
+        self.attn = MultiHeadAttention(n_heads, in_size, attn_dropout)
+        self.conv = ConvFFT(in_size, hidden, kernels, padding, dropout)
+        self.ln = nn.LayerNorm(in_size)
+        self.dropout = nn.Dropout(dropout)
 
-    def forward(self, x, output=None):
-        out, attn = self.attn(x, x, x, output)
+    def forward(self, x, attn_mask=None):
+        out = self.ln(x)
+        out, attn = self.attn(out, out, out, attn_mask)
+        out = x + self.dropout(out)
         out = self.conv(out)
         return out, attn
 
 
-class Encoder(nn.Module):
-    def __init__(self, voc_size, encoder_in_size, encoder_blocks,
-                 n_heads, fft_emb, attn_dropout,
-                 conv_in, conv_hidden, conv_out, kernels, padding, dropout
-                 ):
-        super(Encoder, self).__init__()
-        self.embedding = nn.Embedding(voc_size, encoder_in_size)
-        blocks = [FFTBlock(n_heads, fft_emb, attn_dropout, conv_in, conv_hidden, conv_out, kernels, padding, dropout)
-                  for _ in range(encoder_blocks)]
-        self.layers = nn.Sequential(*blocks)
+class FFT(nn.Module):
+    def __init__(self, n_layers, in_size, n_heads, hidden, kernels, padding, attn_dropout=0.1, dropout=0.1):
+        super().__init__()
+        self.fft_blocks = nn.ModuleList()
+        for _ in range(n_layers):
+            self.fft_blocks.append(FFTBlock(in_size, n_heads, hidden, kernels, padding, attn_dropout=attn_dropout,
+                                            dropout=dropout))
 
-    def get_attn_output(self, x):
-        output = x.eq(0)
-        output = output.unsqueeze(1).expand(-1, x.shape[1], -1)
-        return output
-
-    def forward(self, x):
-        out = self.embedding(x)
-        output = self.get_attn_output(x)
-        for layer in self.layers:
-            out, _ = layer(out, output)
-        return out
+    def forward(self, x, attn_mask=None):
+        for layer in self.fft_blocks:
+            x, _ = layer(x, attn_mask)
+        return x
 
 
-class Decoder(nn.Module):
-    def __init__(self, decoder_blocks,
-                 n_heads, fft_emb, attn_dropout,
-                 conv_in, conv_hidden, conv_out, kernels, padding, dropout):
-        super(Decoder, self).__init__()
-        blocks = [FFTBlock(n_heads, fft_emb, attn_dropout, conv_in, conv_hidden, conv_out, kernels, padding, dropout)
-                  for _ in range(decoder_blocks)]
-        self.layers = nn.Sequential(*blocks)
+# https://pytorch.org/tutorials/beginner/transformer_tutorial.html
+class PositionalEncoding(nn.Module):
 
-    def forward(self, x, output=None):
-        out = x
-        for layer in self.layers:
-            out, _ = layer(out, output)
-        return out
+    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(dropout)
+
+        position = torch.arange(max_len).unsqueeze(1)
+        div_term = torch.exp(torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model))
+        pe = torch.zeros(max_len, 1, d_model)
+        pe[:, 0, 0::2] = torch.sin(position * div_term)
+        pe[:, 0, 1::2] = torch.cos(position * div_term)
+        self.register_buffer("pe", pe)
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = x + self.pe[:x.size(0)]
+        return self.dropout(x)
 
 
 class ConvTranspose(nn.Module):
@@ -86,32 +85,29 @@ class ConvTranspose(nn.Module):
 
 
 class DurationPredictor(nn.Module):
-    def __init__(self, dp_in_size, dp_hidden, dp_kernel_size, dp_dropout, dp_out_size):
+    def __init__(self, in_size, hidden, kernel, dropout=0.1):
         super(DurationPredictor, self).__init__()
         self.layers = nn.Sequential(
-            ConvTranspose(dp_in_size, dp_hidden, dp_kernel_size, dp_kernel_size // 2),
-            nn.LayerNorm(dp_hidden),
+            ConvTranspose(in_size, hidden, kernel, kernel // 2),
+            nn.LayerNorm(hidden),
             nn.ReLU(),
-            nn.Dropout(dp_dropout),
-            ConvTranspose(dp_hidden, dp_out_size, dp_kernel_size, dp_kernel_size // 2),
-            nn.LayerNorm(dp_out_size),
+            nn.Dropout(dropout),
+            ConvTranspose(hidden, hidden, kernel, kernel // 2),
+            nn.LayerNorm(hidden),
             nn.ReLU(),
-            nn.Dropout(dp_dropout),
-            nn.Linear(dp_out_size, 1),
-            nn.ReLU()
+            nn.Dropout(dropout),
+            nn.Linear(hidden, 1),
         )
 
     def forward(self, x):
-        out = self.layers(x).squeeze()
-        if not self.training:
-            out = out.unsqueeze(0)
+        out = self.layers(x).squeeze(-1)
         return out
 
 
 class LengthRegulator(nn.Module):
-    def __init__(self, dp_in_size, dp_hidden, dp_kernel_size, dp_dropout, dp_out_size):
+    def __init__(self, in_size, hidden, kernel, dropout=0.1):
         super(LengthRegulator, self).__init__()
-        self.dp = DurationPredictor(dp_in_size, dp_hidden, dp_kernel_size, dp_dropout, dp_out_size)
+        self.dp = DurationPredictor(in_size, hidden, kernel, dropout=dropout)
 
     def LR(self, x, dur_pred):
         expand_max_len = round(dur_pred.sum(-1).max().item())

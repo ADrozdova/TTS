@@ -35,16 +35,11 @@ np.random.seed(SEED)
 def main(config):
     logger = config.get_logger("train")
 
-    vocoder = Vocoder("waveglow_256channels_universal_v5.pt")
+    vocoder = Vocoder("waveglow_256channels_universal_v5.pt").eval()
     aligner = GraphemeAligner()
 
     # setup data_loader instances
     dataloaders = get_dataloaders(config)
-    # dataloaders = {}
-    # dataset = LJSpeechDataset(".", "train")
-    # val_dataset = LJSpeechDataset(".", "val")
-    # dataloaders['train'] = DataLoader(dataset, num_workers=4, batch_size=2, collate_fn=LJSpeechCollator())
-    # dataloaders['val'] = DataLoader(val_dataset, num_workers=4, batch_size=2, collate_fn=LJSpeechCollator())
 
     # build model architecture, then print to console
     model = config.init_obj(config["arch"], module_arch)
