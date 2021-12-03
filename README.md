@@ -6,7 +6,7 @@
 ```
 pip install -r ./requirements.txt -q
 ```
-Download LJSeech dataset
+Download LJSpeech dataset
 
 ```
 ./get_ljspeech.sh
