@@ -104,6 +104,8 @@ class DurationPredictor(nn.Module):
         return out
 
 
+# based on https://github.com/xcmyz/FastSpeech/blob/master/modules.py
+
 class LengthRegulator(nn.Module):
     def __init__(self, in_size, hidden, kernel, dropout=0.1):
         super(LengthRegulator, self).__init__()

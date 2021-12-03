@@ -20,17 +20,17 @@ class LJSpeechDataset(torchaudio.datasets.LJSPEECH):
             return self.train_len
         full_size = super().__len__()
         train_size = int(0.8 * full_size)
-        if self.mode == "train":
+        if self.part == "train":
             return train_size
         return full_size - train_size
 
     def __getitem__(self, index: int):
         waveform, _, _, transcript = super().__getitem__(index)
-        waveforn_length = torch.tensor([waveform.shape[-1]]).int()
+        waveform_length = torch.tensor([waveform.shape[-1]]).int()
 
         tokens, token_lengths = self._tokenizer(transcript)
 
-        return waveform, waveforn_length, transcript, tokens, token_lengths
+        return waveform, waveform_length, transcript, tokens, token_lengths
 
     def decode(self, tokens, lengths):
         result = []
