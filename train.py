@@ -65,8 +65,6 @@ def main(config):
     if not "val" in dataloaders:
         dataloaders["val"] = None
 
-    # 1 batch
-    dataloaders["train"] = [next(iter(dataloaders["train"]))]
 
     trainer = Trainer(
         model,
