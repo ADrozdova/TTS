@@ -1,7 +1,7 @@
 numpy~=1.21.2
-torch~=1.9.1
+torch==1.10.0+cu111
 -f https://download.pytorch.org/whl/torch_stable.html
-torchaudio~=0.9.1
+torchaudio==0.10.0+cu111
 -f https://download.pytorch.org/whl/torch_stable.html
 matplotlib~=3.4.3
 tensorboard~=2.6.0
