@@ -124,8 +124,7 @@ class Trainer(BaseTrainer):
                 self.writer.add_scalar(
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
-                self._log_spectrogram(batch.melspec, batch.melspec_pred)
-                self._log_audio(batch.waveform, batch.melspec_pred)
+                self._log_spectrogram_audio(batch.melspec, batch.melspec_pred, batch.waveform, batch.melspec_pred)
                 self._log_scalars(self.train_metrics)
             if batch_idx >= self.len_epoch:
                 break
@@ -199,8 +198,7 @@ class Trainer(BaseTrainer):
             self.writer.set_step(epoch * self.len_epoch, "valid")
             self._log_scalars(self.valid_metrics)
             # self._log_predictions(part="val", **batch)
-            self._log_spectrogram(batch.melspec, batch.melspec_pred)
-            self._log_audio(batch.waveform, batch.melspec_pred)
+            self._log_spectrogram_audio(batch.melspec, batch.melspec_pred, batch.waveform, batch.melspec_pred)
 
         # add histogram of model parameters to the tensorboard
         for name, p in self.model.named_parameters():
@@ -247,7 +245,7 @@ class Trainer(BaseTrainer):
             f"predictions_raw", "< < < < > > > >".join(to_log_pred_raw)
         )
 
-    def _log_spectrogram(self, spectrogram_batch_true, spectrogram_batch_pred):
+    def _log_spectrogram_audio(self, spectrogram_batch_true, spectrogram_batch_pred, waveform_true, melspec_pred):
         idx = random.choice(range(len(spectrogram_batch_true)))
         spectrogram_true = spectrogram_batch_true[idx]
         spectrogram_pred = spectrogram_batch_pred[idx]
@@ -258,11 +256,10 @@ class Trainer(BaseTrainer):
         image = PIL.Image.open(plot_spectrogram_to_buf(spectrogram_pred))
         self.writer.add_image("spectrogram pred", ToTensor()(image))
 
-    def _log_audio(self, waveform_true, melspec_pred):
-        idx = random.choice(range(len(melspec_pred)))
         waveform_pred = self.vocoder.inference(melspec_pred[idx].unsqueeze(0)).squeeze(0)
         self.writer.add_audio("audio true", waveform_true[idx].cpu(), 22050)
         self.writer.add_audio("audio pred", waveform_pred.cpu(), 22050)
+
 
     @torch.no_grad()
     def get_grad_norm(self, norm_type=2):

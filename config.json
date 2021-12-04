@@ -38,7 +38,13 @@
             "part": "train",
             "root": "/home/jupyter/mnt/s3/bucket-hse-rw/data/datasets"
           }
-        },
+        }
+      ]
+    },
+    "val": {
+      "batch_size": 16,
+      "num_workers": 8,
+      "datasets": [
         {
           "type": "LJSpeechDataset",
           "args": {
