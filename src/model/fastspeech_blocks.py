@@ -112,11 +112,12 @@ class LengthRegulator(nn.Module):
         self.dp = DurationPredictor(in_size, hidden, kernel, dropout=dropout)
 
     def LR(self, x, dur_pred):
-        output = torch.zeros(dur_pred.shape[0], dur_pred.shape[-1], round(dur_pred.sum(-1).max().item()))
+        output = torch.zeros(dur_pred.shape[0], x.shape[1], round(dur_pred.sum(-1).max().item()))
+        shape = min(dur_pred.shape[-1], x.shape[1])
         for i in range(dur_pred.shape[0]):
             start = 0
             finish = 0
-            for j in range(dur_pred.shape[-1]):
+            for j in range(shape):
                 diff = round(dur_pred[i][j].item())
                 finish += diff
                 output[i, j, start:finish] = 1
