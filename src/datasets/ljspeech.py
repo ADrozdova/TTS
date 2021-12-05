@@ -49,7 +49,7 @@ class LJSpeechDataset(torchaudio.datasets.LJSPEECH):
         if self.part == "train":
             return self.train_len
         if self.part == "val":
-            return self.train_len
+            return self.val_len
 
     def __getitem__(self, index: int):
         if self.part == "val":
