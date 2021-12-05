@@ -70,7 +70,7 @@
     "type": "OneCycleLR",
     "args": {
       "steps_per_epoch": 300,
-      "epochs": 200,
+      "epochs": 30,
       "anneal_strategy": "linear",
       "max_lr": 1e-3,
       "pct_start": 0.2
@@ -78,7 +78,7 @@
     }
   },
   "trainer": {
-    "epochs": 200,
+    "epochs": 40,
     "len_epoch": 300,
     "save_dir": "saved/",
     "save_period": 10,
