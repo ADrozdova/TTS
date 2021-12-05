@@ -7,7 +7,7 @@ from torch.nn.utils.rnn import pad_sequence
 
 @dataclass
 class Batch:
-    index: torch.Tensor
+    index: List[int]
     waveform: torch.Tensor
     waveform_length: torch.Tensor
     transcript: List[str]
