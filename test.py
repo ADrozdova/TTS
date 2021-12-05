@@ -80,6 +80,14 @@ if __name__ == "__main__":
         type=str,
         help="output path (default: ./test_output)"
     )
+    args.add_argument(
+        "-d",
+        "--device",
+        default=None,
+        type=str,
+        help="indices of GPUs to enable (default: all)",
+    )
+    
     args_parsed = args.parse_args()
 
     main(args, args_parsed.resume, args_parsed.output)
