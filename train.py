@@ -7,20 +7,13 @@ import torch
 
 import src.loss as module_loss
 import src.model as module_arch
+from src.aligner.aligner import Aligner
 from src.datasets.utils import get_dataloaders
+from src.featurizer import MelSpectrogram, MelSpectrogramConfig
 from src.trainer import Trainer
 from src.utils import prepare_device
 from src.utils.parse_config import ConfigParser
 from src.vocoder import Vocoder
-from src.featurizer import MelSpectrogram, MelSpectrogramConfig
-from src.aligner import GraphemeAligner
-from torch.utils.data import DataLoader, ChainDataset
-
-from src.datasets.ljspeech import LJSpeechDataset
-from src.collate_fn.collate import LJSpeechCollator
-from src.utils.parse_config import ConfigParser
-
-
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -36,7 +29,7 @@ def main(config):
     logger = config.get_logger("train")
 
     vocoder = Vocoder("waveglow_256channels_universal_v5.pt").eval()
-    aligner = GraphemeAligner()
+    aligner = Aligner()
 
     # setup data_loader instances
     dataloaders = get_dataloaders(config)

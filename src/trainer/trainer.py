@@ -7,6 +7,8 @@ import torch.nn.functional as F
 from torch.nn.utils import clip_grad_norm_
 from torchvision.transforms import ToTensor
 from tqdm import tqdm
+from src.aligner.grapheme_aligner import GraphemeAligner
+from src.aligner.aligner import Aligner
 
 from src.base import BaseTrainer
 from src.logger.utils import plot_spectrogram_to_buf
@@ -116,11 +118,7 @@ class Trainer(BaseTrainer):
             self.train_metrics.update("grad norm", self.get_grad_norm())
             if batch_idx % self.log_step == 0:
                 self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
-                # self.logger.debug(
-                #     "Train Epoch: {} {} Loss: {:.6f}".format(
-                #         epoch, self._progress(batch_idx), batch["loss"].item()
-                #     )
-                # )
+
                 self.writer.add_scalar(
                     "learning rate", self.lr_scheduler.get_last_lr()[0]
                 )
@@ -138,17 +136,20 @@ class Trainer(BaseTrainer):
 
     def process_batch(self, batch, is_train: bool, metrics: MetricTracker):
 
-        batch.durations = self.aligner(
-            batch.waveform.to(device), batch.waveform_length, batch.transcript
-        )
+        if isinstance(self.aligner, GraphemeAligner):
+            batch.durations = self.aligner(
+                batch.waveform.to(device), batch.waveform_length, batch.transcript
+            )
+        if isinstance(self.aligner, Aligner):
+            batch.durations = self.aligner(batch.index)
         mel_config = MelSpectrogramConfig()
         mel_len = batch.waveform_length / mel_config.hop_length
         mel_len = mel_len.unsqueeze(1)
 
         batch = batch.to(torch.device('cpu'))
         mel_len = mel_len.cpu()
-
-        batch.durations = torch.mul(batch.durations, mel_len)
+        if isinstance(self.aligner, GraphemeAligner):
+            batch.durations = torch.mul(batch.durations, mel_len)
 
         mels = self.featurizer(batch.waveform)
         batch.melspec = mels

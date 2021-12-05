@@ -16,6 +16,6 @@ class Aligner(nn.Module):
         durations = []
         for idx in index:
             durations.append(torch.from_numpy(
-                np.load(os.path.join(self.root, str(index) + ".npy"))
+                np.load(os.path.join(self.root, str(idx) + ".npy"))
             ))
         return pad_sequence(durations, batch_first=True)

@@ -7,6 +7,7 @@ from torch.nn.utils.rnn import pad_sequence
 
 @dataclass
 class Batch:
+    index: torch.Tensor
     waveform: torch.Tensor
     waveform_length: torch.Tensor
     transcript: List[str]
@@ -36,7 +37,7 @@ class Batch:
 class LJSpeechCollator:
 
     def __call__(self, instances: List[Tuple]) -> Batch:
-        waveform, waveform_length, transcript, tokens, token_lengths = list(
+        index, waveform, waveform_length, transcript, tokens, token_lengths = list(
             zip(*instances)
         )
 
@@ -50,4 +51,4 @@ class LJSpeechCollator:
         ]).transpose(0, 1)
         token_lengths = torch.cat(token_lengths)
 
-        return Batch(waveform, waveform_length, transcript, tokens, token_lengths)
+        return Batch(index, waveform, waveform_length, transcript, tokens, token_lengths)
