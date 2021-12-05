@@ -21,7 +21,7 @@ class FastSpeech(BaseModel):
 
     def forward(self, x, durations=None):
         out = self.pos_enc(self.emb(x))
-        out = self.encoder(out, mask_padding(out))
+        out = self.encoder(out, mask_padding(x))
         out, dp = self.len_reg(out, target=durations)
         out = self.pos_enc(out)
         out = self.decoder(out)
