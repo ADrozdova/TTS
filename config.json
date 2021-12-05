@@ -72,7 +72,7 @@
       "steps_per_epoch": 300,
       "epochs": 200,
       "anneal_strategy": "linear",
-      "max_lr": 5e-4,
+      "max_lr": 1e-3,
       "pct_start": 0.2
 
     }
