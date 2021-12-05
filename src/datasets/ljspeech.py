@@ -2,6 +2,38 @@ import torch
 
 import torchaudio
 
+LJ_ABBR = {
+    "Mr.":	"Mister",
+    "Mrs.":	"Misess",
+    "Dr.":	"Doctor",
+    "No.":	"Number",
+    "St.":	"Saint",
+    "Co.":	"Company",
+    "Jr.":	"Junior",
+    "Maj.":	"Major",
+    "Gen.":	"General",
+    "Drs.":	"Doctors",
+    "Rev.":	"Reverend",
+    "Lt.":	"Lieutenant",
+    "Hon.":	"Honorable",
+    "Sgt.":	"Sergeant",
+    "Capt.":	"Captain",
+    "Esq.":	"Esquire",
+    "Ltd.":	"Limited",
+    "Col.":	"Colonel",
+    "Ft.":	"Fort",
+}
+
+
+def fix_text(text):
+    to_replace = list('"üêàéâè”“’[]')
+    replacements = [""] + list("ueaeae") + ["", "", "'", "", ""]
+    for c, rep in zip(to_replace, replacements):
+        text = text.replace(c, rep)
+    for abbr, word in LJ_ABBR.items():
+        text = text.replace(abbr, word)
+    return text
+
 
 class LJSpeechDataset(torchaudio.datasets.LJSPEECH):
 
@@ -27,6 +59,7 @@ class LJSpeechDataset(torchaudio.datasets.LJSPEECH):
     def __getitem__(self, index: int):
         waveform, _, _, transcript = super().__getitem__(index)
         waveform_length = torch.tensor([waveform.shape[-1]]).int()
+        transcript = fix_text(transcript)
 
         tokens, token_lengths = self._tokenizer(transcript)
 
