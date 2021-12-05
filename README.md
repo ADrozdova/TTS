@@ -17,3 +17,10 @@ Download waveglow vocoder
 ```
 python get_waveglow.py
 ```
+Download alignments
+
+```
+./get_alignments.sh
+```
+
+Test outputs are in audio folder.
