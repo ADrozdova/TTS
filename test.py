@@ -52,6 +52,7 @@ def main(config_path, checkpoint, output_path):
         sentence = TEST_SENTENCES[i]
         tokens, _ = tokenizer(sentence)
         with torch.no_grad():
+            tokens = tokens.to(device)
             melspec, _ = model(tokens)
             wav = vocoder.inference((melspec.unsqueeze(0)).squeeze(0))
             wavfile.write(os.path.join(output_path, "test_" + str(i) + ".wav"), 22050, wav.squeeze(0).cpu().numpy())
@@ -87,7 +88,7 @@ if __name__ == "__main__":
         type=str,
         help="indices of GPUs to enable (default: all)",
     )
-    
+
     args_parsed = args.parse_args()
 
     main(args, args_parsed.resume, args_parsed.output)
