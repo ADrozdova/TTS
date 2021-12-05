@@ -80,5 +80,6 @@ if __name__ == "__main__":
         type=str,
         help="output path (default: ./test_output)"
     )
+    args = args.parse_args()
 
-    main(args)
+    main(args.config, args.resume, args.output)
